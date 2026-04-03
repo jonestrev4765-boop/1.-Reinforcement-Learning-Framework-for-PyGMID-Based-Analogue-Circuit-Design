@@ -112,10 +112,8 @@ def train(
     )
 
     # Training state
-    best_reward          = float('-inf')
     best_val_reward      = float('-inf')
     no_improvement_count = 0
-    best_vnin_seen       = float('inf')
 
     episode_rewards  = []
     episode_log      = []
@@ -179,10 +177,6 @@ def train(
         fc_ok         = bool(info['fc_ok'])
         Fc_max_marg    = float(info['Fc_max_margin'])
 
-        if final_vnin < best_vnin_seen:
-            best_vnin_seen = final_vnin
-            agent.save(os.path.join(best_model_dir, 'best_vnin.pth'))
-
         # Prints finished parameters every episode
         success_tag = "  *** SUCCESS ***" if terminated_ep else ""
         print(
@@ -199,29 +193,6 @@ def train(
             f"LN: {final_LN_um:.0f} um | "
             f"A: {final_area:.0f} um2 | "
         )
-
-        # Record successful episodes 
-        if terminated_ep:
-            success_ep = {
-                'episode'     : episode + 1,
-                'reward'      : float(episode_reward),
-                'steps'       : step + 1,
-                'vn_in'       : final_vnin,
-                'fc'          : final_fc,
-                'ibias_uA'    : final_ibias * 1e6,
-                'gm_idn'      : final_gmidn,
-                'gm_idp'      : final_gmidp,
-                'ln_lp_ratio' : final_ln_lp,
-                'LN_um'       : final_LN_um,
-                'area_um2'    : final_area,
-            }
-            success_episodes.append(success_ep)
-            agent.save(os.path.join(best_model_dir, f'success_ep{episode+1}.pth'))
-            agent.save(overall_best_path)
-
-        elif episode_reward > best_reward:
-            best_reward = episode_reward
-            agent.save(os.path.join(best_model_dir, f'best_reward_ep{episode+1}.pth'))
 
         # episode record for plotitng
         ep_record = {
@@ -324,9 +295,7 @@ def train(
     print(f"  Episodes run          : {episode + 1}")
     print(f"  Total time            : {total_time/60:.1f} min  "
           f"({total_time/(episode+1):.2f} s/ep)")
-    print(f"  Best training reward  : {best_reward:.4f}")
     print(f"  Best validation reward: {best_val_reward:.4f}")
-    print(f"  Best VNin seen        : {best_vnin_seen:.4f} nV/rtHz")
     print(f"  Successful episodes   : {len(success_episodes)}")
     print("=" * 70)
 
@@ -368,9 +337,7 @@ def train(
             'patience'            : patience,
         },
         'results': {
-            'best_training_reward'  : best_reward,
             'best_validation_reward': best_val_reward,
-            'best_vnin_nV'          : best_vnin_seen,
             'success_count'         : len(success_episodes),
             'episodes_run'          : episode + 1,
             'total_time_s'          : total_time,
